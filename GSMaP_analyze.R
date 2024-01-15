@@ -4,6 +4,7 @@ library(tidyverse)
 library(terra)
 library(parallel)
 library(tictoc)
+library(tools)
 
 gsmap_zip_dir = "data/GSMaP_v7_hourly_MVK_zip/"
 gsmap_crop_dir = "results/GSMaP_v7_hourly_MVK_crop/"
@@ -52,9 +53,9 @@ gsmap_unzip_files =
     cropped_raster = terra::crop(this_raster, crop_raster)
     
     savepath = paste0(file.path(gsmap_crop_dir, 
-                                gsmap_zip_files$Year,
-                                basename(tools::file_path_sans_ext(zippath))),
-                      ".tif")
+                                gsmap_zip_files$Year[i],
+                                basename(file_path_sans_ext(file_path_sans_ext(zippath)))),
+                      "_PRC.tif")
     
     dir.create(dirname(savepath))
     
