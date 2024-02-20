@@ -65,6 +65,24 @@ gsmap_unzip_files =
     
 })
 
-stopCluster(cl)
 
 toc()
+
+## Zonal stats by bounding area
+
+tic()
+
+boundary_path = "./data/shp/DAS_Citarum_Hulu.shp"
+
+hourly_precip = 
+  parLapply(cl, sample(1:dim(tif_list)[[1]]), function(i){
+    avg_rain = terra::zonal(terra::rast(tif_list$Path[[i]]), terra::vect(boundary_path))
+    ret = tibble(DateTime = tif_list$DateTime[[i]], Precip = avg_rain[[1]])
+  }) |> 
+  bind_rows() |>
+  arrange(DateTime) |>
+  print()
+toc()
+
+
+stopCluster(cl)
