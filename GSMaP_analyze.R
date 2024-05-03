@@ -68,4 +68,9 @@ rm(cl)
 
 ggplot(hourly_precip, aes(DateTime - minutes(30), Precip)) + 
   geom_col() + 
-  scale_x_datetime(date_breaks = "4 hours")
+  scale_x_datetime(date_breaks = "6 hours") + 
+  xlab("DateTime (UTC+00)") + 
+  ylab("Precipitation (mm/hour)")
+
+ggsave("./hourly_precip.png", width = 12, height = 6, dpi = 600)
+write.csv(hourly_precip, "./hourly_precip.csv", row.names = FALSE)
