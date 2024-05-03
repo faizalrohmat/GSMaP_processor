@@ -8,6 +8,7 @@ library(tools)
 
 gsmap_zip_dir = "data/GSMaP_v7_hourly_MVK_zip/"
 gsmap_crop_dir = "results/GSMaP_v7_hourly_MVK_crop/"
+boundary_path = "./data/shp/DAS_Citarum_Hulu.shp"
 
 reference_raster_path = "./data/reference_raster.tif"
 crop_raster_path = "./data/indonesia_crop_raster.tif"
@@ -27,15 +28,16 @@ raster_grid = tibble(expand.grid(x = lon, y = lat)) |>
 
 tic()
 
-cl = makeCluster(pmax(1, floor(detectCores() * 2/3)))
+cl = makeCluster(pmax(1, floor(detectCores() * 1/4)))
 clusterExport(cl, c("gsmap_zip_files", "raster_grid", "reference_raster_path",
-                    "crop_raster_path", "gsmap_crop_dir"))
+                    "crop_raster_path", "gsmap_crop_dir", "boundary_path"))
 clusterEvalQ(cl, {
   library(tidyverse)
   library(terra)
+  library(tools)
 })
 
-gsmap_unzip_files = 
+hourly_precip = 
   parLapply(cl, 1:dim(gsmap_zip_files)[[1]], function(i){
     
     reference_raster = terra::rast(reference_raster_path)
@@ -52,37 +54,18 @@ gsmap_unzip_files =
     this_raster = terra::rast(raster_content, crs = crs(reference_raster))
     cropped_raster = terra::crop(this_raster, crop_raster)
     
-    savepath = paste0(file.path(gsmap_crop_dir, 
-                                gsmap_zip_files$Year[i],
-                                basename(file_path_sans_ext(file_path_sans_ext(zippath)))),
-                      "_PRC.tif")
-    
-    dir.create(dirname(savepath))
-    
-    if (!file.exists(savepath)) {
-      writeRaster(cropped_raster, savepath)
-    }
-    
-})
-
-
-toc()
-
-## Zonal stats by bounding area
-
-tic()
-
-boundary_path = "./data/shp/DAS_Citarum_Hulu.shp"
-
-hourly_precip = 
-  parLapply(cl, sample(1:dim(tif_list)[[1]]), function(i){
-    avg_rain = terra::zonal(terra::rast(tif_list$Path[[i]]), terra::vect(boundary_path))
-    ret = tibble(DateTime = tif_list$DateTime[[i]], Precip = avg_rain[[1]])
+    avg_rain = terra::zonal(cropped_raster, terra::vect(boundary_path))
+    ret = tibble(DateTime = gsmap_zip_files$DateTime[[i]], Precip = avg_rain[[1]])
   }) |> 
   bind_rows() |>
   arrange(DateTime) |>
   print()
+
 toc()
 
-
 stopCluster(cl)
+rm(cl)
+
+ggplot(hourly_precip, aes(DateTime - minutes(30), Precip)) + 
+  geom_col() + 
+  scale_x_datetime(date_breaks = "4 hours")
