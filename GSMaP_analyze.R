@@ -6,7 +6,7 @@ library(parallel)
 library(tictoc)
 library(tools)
 
-gsmap_zip_dir = "data/GSMaP_v7_hourly_MVK_zip/"
+gsmap_zip_dir = "D:/GSMaP_test/GSMaP_v7_hourly_202211/"
 gsmap_crop_dir = "results/GSMaP_v7_hourly_MVK_crop/"
 boundary_path = "./data/shp/DAS_Citarum_Hulu.shp"
 
@@ -66,11 +66,28 @@ toc()
 stopCluster(cl)
 rm(cl)
 
+daily_precip = hourly_precip |>
+  mutate(Date = as.Date(DateTime)) |>
+  group_by(Date) |>
+  summarise(Precip = sum(Precip)) |>
+  print()
+
+ggplot(daily_precip, aes(Date, Precip)) + 
+  geom_col() + 
+  scale_x_date(date_breaks = "1 day") + 
+  xlab("DateTime (UTC+00)") + 
+  ylab("Precipitation (mm/hour)") + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+ggsave("./daily_precip.png", width = 12, height = 6, dpi = 600)
+write.csv(daily_precip, "./daily_precip.csv", row.names = FALSE)
+
 ggplot(hourly_precip, aes(DateTime - minutes(30), Precip)) + 
   geom_col() + 
-  scale_x_datetime(date_breaks = "6 hours") + 
+  scale_x_datetime(date_breaks = "6 hours") +
   xlab("DateTime (UTC+00)") + 
-  ylab("Precipitation (mm/hour)")
+  ylab("Precipitation (mm/hour)") + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 ggsave("./hourly_precip.png", width = 12, height = 6, dpi = 600)
 write.csv(hourly_precip, "./hourly_precip.csv", row.names = FALSE)

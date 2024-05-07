@@ -49,3 +49,7 @@ po/*~
 rsconnect/
 
 results/
+
+*.png
+
+*.csv
